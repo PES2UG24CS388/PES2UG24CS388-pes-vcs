@@ -196,6 +196,7 @@ int index_save(const Index *index) {
     }
 
     fclose(f);
+    rename(".pes/index.tmp", ".pes/index");
     return 0;
 }
 
