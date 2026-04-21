@@ -140,16 +140,14 @@ int tree_from_index(ObjectID *id_out) {
 tree.count = 0;
 
 for (int i = 0; i < idx.count; i++) {
+    const char *slash = strchr(idx.entries[i].path, '/');
+
+    if (slash) continue;  // ignore nested paths
+
     TreeEntry *entry = &tree.entries[tree.count++];
 
     entry->mode = idx.entries[i].mode;
-
-    // extract filename (ignore directories for now)
-    const char *name = strrchr(idx.entries[i].path, '/');
-    if (name) name++;
-    else name = idx.entries[i].path;
-
-    strcpy(entry->name, name);
+    strcpy(entry->name, idx.entries[i].path);
     entry->hash = idx.entries[i].hash;
 }
 
