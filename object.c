@@ -112,6 +112,28 @@ int object_write(ObjectType type, const void *data, size_t len, ObjectID *id_out
     memcpy(full_data, header, header_len);
     memcpy(full_data + header_len, data, len);
     compute_hash(full_data,total_size,id_out);
+    // Check if object already exists
+    if (object_exists(id_out)) {
+    free(full_data);
+    return 0;
+    }
+
+// Get final object path
+    char path[512];
+    object_path(id_out, path, sizeof(path));
+
+// Extract directory path
+    char dir[512];
+    strncpy(dir, path, sizeof(dir));
+    char *slash = strrchr(dir, '/');
+    if (!slash) {
+    free(full_data);
+    return -1;
+    }
+    *slash = '\0';
+
+// Create directory if needed
+    mkdir(dir, 0755);
     
     return -1;
 }
