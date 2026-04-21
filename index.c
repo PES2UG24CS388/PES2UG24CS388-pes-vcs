@@ -180,7 +180,7 @@ int index_save(const Index *index) {
 
     qsort(temp.entries, temp.count, sizeof(IndexEntry), compare_entries);
 
-    FILE *f = fopen(".pes/index", "w");
+    FILE *f = fopen(".pes/index.tmp", "w");
     if (!f) return -1;
 
     for (int i = 0; i < temp.count; i++) {
