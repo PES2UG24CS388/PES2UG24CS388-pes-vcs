@@ -134,6 +134,35 @@ int object_write(ObjectType type, const void *data, size_t len, ObjectID *id_out
 
 // Create directory if needed
     mkdir(dir, 0755);
+    // Temp file
+    char temp_path[512];
+    snprintf(temp_path, sizeof(temp_path), "%s/tmpXXXXXX", dir);
+
+        int fd = mkstemp(temp_path);
+    if (fd < 0) {
+        free(full_data);
+        return -1;
+    }
+
+// Write data
+    if (write(fd, full_data, total_size) != (ssize_t)total_size) {
+        close(fd);
+        free(full_data);
+        return -1;
+    }
+
+// Flush to disk
+    fsync(fd);
+    close(fd);
+
+// Atomic rename
+    if (rename(temp_path, path) != 0) {
+        free(full_data);
+        return -1;
+    }
+
+    free(full_data);
+    return 0;
     
     return -1;
 }
