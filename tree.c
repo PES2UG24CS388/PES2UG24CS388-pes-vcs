@@ -153,7 +153,18 @@ for (int i = 0; i < idx.count; i++) {
     entry->hash = idx.entries[i].hash;
 }
 
-    // temporary: just return failure
-    (void)id_out;
+    void *data;
+size_t len;
+
+if (tree_serialize(&tree, &data, &len) != 0) {
     return -1;
+}
+
+if (object_write(OBJ_TREE, data, len, id_out) != 0) {
+    free(data);
+    return -1;
+}
+
+free(data);
+return 0;
 }
