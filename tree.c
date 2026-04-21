@@ -130,39 +130,49 @@ int tree_serialize(const Tree *tree, void **data_out, size_t *len_out) {
 //   - object_write    : save that binary buffer to the store as OBJ_TREE
 //
 // Returns 0 on success, -1 on error.
+static int build_tree_recursive(Index *idx, const char *prefix, ObjectID *out_id) {
+    Tree tree;
+    tree.count = 0;
+
+    for (int i = 0; i < idx->count; i++) {
+        const char *path = idx->entries[i].path;
+
+        // check prefix
+        if (prefix && strncmp(path, prefix, strlen(prefix)) != 0)
+            continue;
+
+        const char *rest = prefix ? path + strlen(prefix) : path;
+
+        const char *slash = strchr(rest, '/');
+
+        if (!slash) {
+            TreeEntry *entry = &tree.entries[tree.count++];
+
+            entry->mode = idx->entries[i].mode;
+            strcpy(entry->name, rest);
+            entry->hash = idx->entries[i].hash;
+        }
+    }
+
+    void *data;
+    size_t len;
+
+    if (tree_serialize(&tree, &data, &len) != 0)
+        return -1;
+
+    if (object_write(OBJ_TREE, data, len, out_id) != 0) {
+        free(data);
+        return -1;
+    }
+
+    free(data);
+    return 0;
+}
 int tree_from_index(ObjectID *id_out) {
     Index idx;
 
-    if (index_load(&idx) != 0) {
+    if (index_load(&idx) != 0)
         return -1;
-    }
-    Tree tree;
-tree.count = 0;
 
-for (int i = 0; i < idx.count; i++) {
-    const char *slash = strchr(idx.entries[i].path, '/');
-
-    if (slash) continue;  // ignore nested paths
-
-    TreeEntry *entry = &tree.entries[tree.count++];
-
-    entry->mode = idx.entries[i].mode;
-    strcpy(entry->name, idx.entries[i].path);
-    entry->hash = idx.entries[i].hash;
-}
-
-    void *data;
-size_t len;
-
-if (tree_serialize(&tree, &data, &len) != 0) {
-    return -1;
-}
-
-if (object_write(OBJ_TREE, data, len, id_out) != 0) {
-    free(data);
-    return -1;
-}
-
-free(data);
-return 0;
+    return build_tree_recursive(&idx, NULL, id_out);
 }
